@@ -1,61 +1,66 @@
-# Persona_Bot (Python → C# → R)
+# Persona_Bot (Python + C# + R)
 
-A multi-turn conversational AI that gives an LLM a **custom persona via a system prompt** and maintains full conversation history across turns—built in **three languages** to understand the same concept from multiple angles: **how to define AI behavior, manage state, and build a conversation loop**.
+A multi-turn conversational AI that gives an LLM a **custom persona via a system prompt**, keeps **full conversation history** across turns, and runs until you exit—implemented in **three languages** so the same ideas land in Python, C#, and R: **roles, stateful history, and a conversation loop**.
 
-This is **Project 2** in my compounding portfolio series. Project 1 ([Hello_LLM](https://github.com/kelvintechnical/Hello_LLM)) established the foundation: authenticate, send one message, read one response. Persona_Bot builds directly on that foundation by adding memory, personality, and a loop.
+This is **Project 2** in my compounding portfolio series. [Hello_LLM](https://github.com/kelvintechnical/Hello_LLM) was Project 1: one prompt, one reply, same stack in Python, C#, and R—**authenticate, build a request, call the API, parse JSON**. Persona_Bot is the natural next step: everything from Hello_LLM still applies; this repo **reuses those habits** and adds **persona + loop + memory**.
+
+## From Hello_LLM to Persona_Bot (how the skills combine)
+
+Hello_LLM taught the **request lifecycle** end to end. Persona_Bot does not replace that—it **extends** it:
+
+| Skill from [Hello_LLM](https://github.com/kelvintechnical/Hello_LLM) | How Persona_Bot uses it |
+| --- | --- |
+| **Secrets** — `.env` (Python/R), User Secrets (C#) | Same patterns: Python and R load `OPENAI_API_KEY` from `.env`; C# reads from `dotnet user-secrets`. |
+| **HTTP / SDK choice** — Python SDK, C# OpenAI client, R `httr2` + JSON | Same split: Python uses the OpenAI client; C# uses `ChatClient` / `CompleteChatAsync`; R builds the Chat Completions body and calls the REST endpoint explicitly. |
+| **Messages as structured input** | Hello_LLM used a minimal `messages` list. Here the list **grows every turn**: `system` once, then alternating `user` / `assistant`. |
+| **Parse the assistant text from the response** | Same extraction idea; the payload is just deeper because the conversation is longer. |
+
+What Project 2 adds on top: **`system` role as persona**, **append-after-each-turn**, and **send full history every call** (because the API is stateless—there is no server-side chat memory unless you send it).
 
 ## What this project does
 
-- **Python** (`persona_bot.py`): loads API key from `.env`, gives the AI a named persona (`Eddie`) via a `system` role message, maintains a growing `conversation_history` list, and loops until the user types `quit`, `exit`, or `bye`.
-- **C#** (`csharp/persona_bot/Program.cs`): loads API key from **.NET User Secrets**, builds the same system prompt + history pattern using strongly typed SDK objects, runs an async conversation loop.
-- **R** (`R/persona_bot.R`): loads API key from `.env`, maintains history as a nested list, calls the Chat Completions API via `httr2` in a `repeat` loop.
+- **Python** (`persona_bot.py`): loads the API key from `.env`, sets persona **Eddie** via a `system` message, appends user/assistant turns to `conversation_history`, calls `gpt-4o-mini` until you type `quit`, `exit`, or `bye`.
+- **C#** (`csharp/csharp_persona_bot/Program.cs`): loads the key from **.NET User Secrets**, uses typed `ChatMessage` history, `await`s `CompleteChatAsync` in a `while` loop—same exit words as Python.
+- **R** (`R/persona_bot.R`): loads `.env`, keeps history as nested lists, uses `httr2` + `jsonlite` against the Chat Completions endpoint, `repeat` / `break` for the loop—same behavior, explicit HTTP.
 
-All three versions send the same system prompt:
-
-> You are a helpful assistant named Eddie who is an expert Python mentor. You explain code clearly and encourage the user to type everything themselves.
+All three use the same **system** persona (Eddie, Python mentor—encouraging, procedural, not doing the typing for you).
 
 ## Why I did it (and why in three languages)
 
-- **Transferable understanding**: The conversation loop, role system, and history pattern work the same way regardless of language — learning it in three forces me to understand the concept, not just the syntax.
-- **Memory is the upgrade**: Project 1 sent one message and got one reply. Project 2 sends the full conversation every turn — that's what gives the model context. Same API, fundamentally different behavior.
-- **Compounding habit**: Every project in this series reuses and extends the last. The `.env` setup, client creation, and API call from Hello_LLM are all still here — Persona_Bot just adds layers on top.
+- **Transferable understanding**: Loop, roles, and history behave the same in every language; three implementations stress the **concept**, not one syntax.
+- **Memory is the upgrade**: Project 1 = one shot. Project 2 = **full transcript every request**—that is what “memory” means with a stateless API.
+- **Compounding habit**: Same repo hygiene as Hello_LLM (`.gitignore`, no keys in source); same three-ecosystem layout so I can compare ergonomics honestly.
 
 ## Same workflow, three ecosystems
 
-No matter the language, the shape of the integration is identical:
+Shape of the integration (same as Hello_LLM, with extra steps):
 
-- **Persona**: define Eddie's behavior once via `system` role
-- **Loop**: keep the conversation running until exit condition
-- **Append**: add every user message and assistant reply to history
-- **Send**: pass the full history list to the API every turn
-- **Print**: extract and display the assistant's reply
+- **Supply**: load `OPENAI_API_KEY` securely (`.env` or User Secrets).
+- **Persona**: one `system` message up front.
+- **Loop**: read input until exit phrase.
+- **Append**: push each `user` message, then each `assistant` reply onto history.
+- **Delivery**: send `model` + full `messages` every turn.
+- **Readback**: print the latest assistant content.
 
-Where they differ is ergonomics:
+Where they differ is mostly ergonomics:
 
-- **Python**: list of dicts; synchronous by default; fast to iterate.
-- **C#**: strongly typed message objects; async-first (`await`); explicit `List<>` for history.
-- **R**: nested lists for history; raw HTTP via `httr2`; `repeat` loop with `break`.
+- **Python**: list of dicts; SDK hides HTTP; quick iteration.
+- **C#**: `List<ChatMessage>`, async-first, model bound on the client.
+- **R**: nested lists, `httr2` shows the wire format—good for “what actually gets sent.”
 
 ## Diesel-tech analogies (how it clicked for me)
 
-- **System prompt = the employee handbook**  
-  Before Eddie says a word, he reads the rules. Same as briefing a technician on shop procedures before they touch a vehicle.
-- **Conversation history = the running work order**  
-  Every fault code, every note, every technician comment stays on the job log. You send the full log every diagnostic scan — not just the latest reading.
-- **`while True` loop = the engine running**  
-  The loop keeps firing until you explicitly cut the ignition (`break`). It doesn't stop on its own.
-- **`system` role = rail pressure baseline**  
-  Sets the operating parameters before any real work begins. Change the system prompt, change the behavior — same hardware, different tuning map.
-- **Appending to history = writing to the ECM log**  
-  Every turn gets written to memory. Skip a turn and downstream diagnostics lose context.
+- **System prompt = the employee handbook** — rules before the first customer interaction.
+- **Conversation history = the running work order** — every note stays on the job; you resend the whole log each round.
+- **The loop = the engine running** — runs until you cut ignition (`break` / exit phrase).
+- **Appending history = ECM log entries** — skip a turn and downstream context is wrong.
 
 ## What I learned (skills gained)
 
-- **The three OpenAI roles**: `system` (rules), `user` (input), `assistant` (response) — and why order matters.
-- **Stateful conversation**: LLMs have no memory between calls — you manually pass the full history every time.
-- **Loop design**: `while True` / `while(true)` / `repeat` with a clean exit condition across all three languages.
-- **`.gitignore` discipline**: learned the hard way — `.gitignore` must come before `git add .`, always.
-- **`git filter-branch`**: how to scrub a secret from git history when push protection blocks a commit.
+- **Roles**: `system` / `user` / `assistant` and why order matters.
+- **Stateful conversation in a stateless API**: you are the memory layer.
+- **Loop design**: `while True`, `while (true)`, `repeat` + `break`, consistent exit handling.
+- **Carrying Hello_LLM forward**: secrets, clients vs raw HTTP, and JSON-shaped `messages`—then layering persona and history on top.
 
 ## Repo structure
 
@@ -63,12 +68,13 @@ Where they differ is ergonomics:
 Persona_Bot/
   persona_bot.py
   csharp/
-    persona_bot/
+    csharp_persona_bot/
       Program.cs
-      persona_bot.csproj
+      csharp_persona_bot.csproj
   R/
     persona_bot.R
   pyproject.toml
+  uv.lock
   .gitignore
   README.md
 ```
@@ -77,7 +83,7 @@ Persona_Bot/
 
 ### 1) Get an API key
 
-You'll need an `OPENAI_API_KEY`. **Never commit secrets.** This repo's `.gitignore` excludes `.env`.
+You need an `OPENAI_API_KEY`. **Never commit secrets.** This repo’s `.gitignore` excludes `.env`.
 
 ### 2) Python run
 
@@ -100,46 +106,48 @@ uv run python persona_bot.py
 Set the secret for the C# project:
 
 ```bash
-dotnet user-secrets set "OPENAI_API_KEY" "your_key_here" --project csharp/persona_bot
+dotnet user-secrets set "OPENAI_API_KEY" "your_key_here" --project csharp/csharp_persona_bot
 ```
 
 Run:
 
 ```bash
-dotnet run --project csharp/persona_bot
+dotnet run --project csharp/csharp_persona_bot
 ```
 
 ### 4) R run
 
-Install dependencies (once):
+Install dependencies once (in R or via `Rscript`):
 
 ```r
 install.packages(c("dotenv", "httr2", "jsonlite"))
 ```
 
-Run from repo root:
+Run from the **repo root** so `.env` is found:
 
 ```powershell
 cd D:\Kelvins_Projects\Persona_Bot
 Rscript .\R\persona_bot.R
 ```
 
+Tip: if `Rscript` is not on your `PATH`, call it with the full path to `Rscript.exe` (same idea as [Hello_LLM’s README](https://github.com/kelvintechnical/Hello_LLM)).
+
 ## Notes on security
 
 - **Do not store real keys in code.**
-- Use **User Secrets** (C#) or `.env` (Python/R) locally.
-- If a key is ever committed: treat it as compromised and rotate it immediately — same as contaminated fuel in a common-rail system.
+- Use **User Secrets** (C#) or **`.env`** (Python/R) locally only.
+- If a key is ever committed, treat it as compromised and **rotate** it immediately.
 
 ## Series
 
 | Project | Repo | What it adds |
 | --- | --- | --- |
 | 01 | [Hello_LLM](https://github.com/kelvintechnical/Hello_LLM) | Auth + one API call + parse response |
-| 02 | Persona_Bot ← you are here | System prompt + conversation loop + history |
+| 02 | Persona_Bot ← you are here | System persona + conversation loop + full history |
 | 03 | Coming soon | Agents + tool use |
 
 ## Next steps
 
-- Add streaming output so Eddie's replies appear token by token.
-- Add a `/reset` command to clear history and start a new conversation.
-- Add a `max_history` limit to avoid exceeding context window on long sessions.
+- Streaming replies token by token.
+- A `/reset` command to clear history.
+- Optional `max_history` to stay inside context limits on long sessions.
