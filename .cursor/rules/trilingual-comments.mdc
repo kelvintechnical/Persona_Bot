@@ -1,0 +1,39 @@
+---
+description: Trilingual comment style for polyglot LLM learning projects
+globs: ["**/*.cs", "**/*.py", "**/*.R"]
+---
+
+# Trilingual Comment Standard
+
+For every line of code in this project, add inline comments in this format:
+
+## C# files
+// actual C# code
+// Python: <equivalent Python code>
+// R: <equivalent R code>
+// WHAT: one sentence — what this line does
+// WHY: one sentence — why it's written this way
+// SYNTAX: (optional) explain non-obvious tokens/operators
+
+## Python files
+actual Python code
+C#: <equivalent C# code>
+R: <equivalent R code>
+WHAT: one sentence
+WHY: one sentence
+SYNTAX: (optional)
+
+## R files
+actual R code
+Python: <equivalent Python code>
+C#: <equivalent C# code>
+WHAT: one sentence
+WHY: one sentence
+SYNTAX: (optional)
+
+## Rules
+- Never skip a line — comments go on EVERY line including imports and braces
+- Keep equivalents as real runnable code, not descriptions
+- If no equivalent exists in a language, write: # No direct equivalent — explain why
+- WHAT/WHY max 1 sentence each
+- SYNTAX note only when a token/operator would confuse a learner
