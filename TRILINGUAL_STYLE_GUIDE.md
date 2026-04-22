@@ -1,34 +1,29 @@
-# Trilingual Comment Style Guide
-## Purpose
-Every file in this project (C#, Python, R) is commented to show the same
-concept across all three languages simultaneously. This is a learning tool —
-reading one file teaches you all three.
+# Trilingual Comment Style Guide (C# ⇄ Python ⇄ R)
 
-## Comment Format (C# example)
+## Goal
+Every **C#** line is annotated with the closest runnable equivalent in **Python** and **R**, plus a short explanation of intent.
+
+## Required block (per line)
+- `// Python: <runnable code>`
+- `// R: <runnable code>`
+- `// WHAT: <1 sentence>`
+- `// WHY: <1 sentence>`
+- `// SYNTAX: <only if cross-language confusing>`
+
+## Example
+
 ```csharp
-var history = new List();
+var history = new List<ChatMessage>();
 // Python: history = []
 // R: history <- list()
-// WHAT: Creates an empty typed list to hold all conversation messages
-// WHY: OpenAI API is stateless — full history must be sent every turn for memory
-// SYNTAX: List — generic type constraint; only ChatMessage objects allowed
+// WHAT: Creates an empty message list for the chat history.
+// WHY: The API is stateless, so prior messages must be resent each turn.
+// SYNTAX: List<T> is a generic typed list; T is ChatMessage here.
 ```
 
 ## Rules
-1. Every line gets comments — imports, braces, declarations, everything
-2. Equivalents must be real runnable code, not descriptions
-3. If no equivalent exists: `# No direct equivalent — [reason]`
-4. WHAT = what the line does (1 sentence)
-5. WHY = the intent/benefit (1 sentence)  
-6. SYNTAX = only when a token would confuse a learner crossing languages
-
-## Quick Cursor Prompt (paste into any Cursor chat)
-> "Follow the trilingual comment style in TRILINGUAL_STYLE_GUIDE.md.
-> For every line, add: Python equivalent, R equivalent, WHAT, WHY,
-> and SYNTAX note if needed. Keep equivalents as real runnable code."
-
-Next steps:
-
-Commit both files: git add . && git commit -m "docs: add trilingual style guide"
-In any future Cursor chat just say: "follow TRILINGUAL_STYLE_GUIDE.md"
-Works for Hello_LLM, Persona_Bot, and every future polyglot project
+- **Every line**: includes imports, braces, declarations, and “boring” lines.
+- **Equivalents are code**: must be runnable snippets, not descriptions.
+- **No equivalent**: write `// No direct equivalent — <reason>`.
+- **Keep it tight**: WHAT and WHY are each one sentence max.
+- **SYNTAX is rare**: only when a token/pattern would trip a learner.
